@@ -14,6 +14,8 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg://requirements:${POSTGRES_PASSWORD:-local_dev_only}@db:5432/requirements
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:?Set GOOGLE_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
     expose:
       - "8000"
     depends_on:

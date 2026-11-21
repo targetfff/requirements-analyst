@@ -62,7 +62,10 @@ function list(items) {
 function renderAnalysis(result, mode) {
   const card = element('article', 'analysis-card');
   const top = element('div', 'analysis-top');
-  top.append(element('h3', '', modeTitles[mode] || modeTitles.analyst), element('span', 'analysis-badge', 'ДЕМО-ШАБЛОН'));
+  top.append(element('h3', '', modeTitles[mode] || modeTitles.analyst));
+  if (result.is_demo === true) {
+    top.append(element('span', 'analysis-badge', 'ДЕМО-ШАБЛОН'));
+  }
   card.append(top);
 
   if (result.requirements?.length) {

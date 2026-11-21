@@ -34,13 +34,15 @@ class Issue(BaseModel):
     text: str
 
 
-class AnalysisResult(BaseModel):
-    # Fixed fixture for UI development, NOT an LLM response.
-    is_demo: bool = True
+class LLMAnalysis(BaseModel):
     requirements: list[Requirement] = Field(default_factory=list)
     issues: list[Issue] = Field(default_factory=list)
     acceptance_criteria: list[str] = Field(default_factory=list)
     questions: list[str] = Field(default_factory=list)
+
+
+class AnalysisResult(LLMAnalysis):
+    is_demo: bool = True
 
 
 class MessageRead(BaseModel):

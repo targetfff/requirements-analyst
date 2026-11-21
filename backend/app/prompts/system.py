@@ -1,4 +1,4 @@
-"""Prompts prepared for the future LangChain integration. Unused in demo mode."""
+"""System prompts for the three requirements analysis modes."""
 
 SYSTEM_PROMPTS = {
     "analyst": (
