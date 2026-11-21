@@ -23,6 +23,7 @@ from app.schemas.chat import BusinessAnalysis, SystemAnalysis
 from app.services.chat import SYSTEM_ANALYSIS_REQUEST, clear_messages
 from app.services.history import MAX_CONTEXT_MESSAGES
 from app.services.llm import get_llm
+from tests.conftest import TEST_ORIGIN
 
 
 BUSINESS_RESULT = {
@@ -80,8 +81,8 @@ def gemini(monkeypatch):
     get_llm.cache_clear()
 
 
-def test_health(client):
-    res = client.get("/api/health")
+def test_health(anonymous_client):
+    res = anonymous_client.get("/api/health")
     assert res.status_code == 200
     assert res.json() == {"status": "ok", "mode": "llm"}
 
@@ -326,6 +327,8 @@ def test_context_limit_keeps_current_requirements_after_restart(client, db_engin
     restarted.dependency_overrides[get_db] = restart_db
     try:
         with TestClient(restarted) as new_client:
+            new_client.cookies.update(client.cookies)
+            new_client.headers["Origin"] = TEST_ORIGIN
             assert new_client.get("/api/chat").json() == previous
             gemini.return_value = gemini_response("Уточнение после перезапуска")
             payload = {"text": "После перезапуска", "mode": "clarification"}

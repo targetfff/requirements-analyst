@@ -1,8 +1,17 @@
 'use strict';
 
-const state = { mode: 'business_analyst', busy: false, loadingHistory: true, messages: [], requirements: null };
+const state = { mode: 'business_analyst', authenticated: false, busy: false, loadingHistory: true, messages: [], requirements: null };
 let historyRevision = 0; // Ignore a stale initial history fetch after a user action.
+let sessionRevision = 0;
+let sessionTimer;
+let signingIn = false;
 const $ = (selector) => document.querySelector(selector);
+const appShell = $('.app-shell');
+const loginScreen = $('#login-screen');
+const loginKey = $('#access-key');
+const loginButton = $('#login-button');
+const loginError = $('#login-error');
+const logoutButton = $('#logout-button');
 const messagesEl = $('#messages');
 const emptyState = $('#empty-state');
 const promptEl = $('#prompt-text');
@@ -28,8 +37,12 @@ function showError(message = '') {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(path, options);
+  const revision = sessionRevision;
+  const response = await fetch(path, { cache: 'no-store', credentials: 'same-origin', ...options });
   if (!response.ok) {
+    if (response.status === 401 && state.authenticated && revision === sessionRevision) {
+      showLogin('Сессия завершилась. Войдите снова.');
+    }
     let message = `Ошибка запроса (${response.status})`;
     try {
       const body = await response.json();
@@ -40,6 +53,93 @@ async function api(path, options = {}) {
     throw error;
   }
   return response.status === 204 ? null : response.json();
+}
+
+function showLoginError(message = '') {
+  loginError.textContent = message;
+  loginError.hidden = !message;
+}
+
+function syncLogin() {
+  loginKey.disabled = signingIn;
+  loginButton.disabled = signingIn || !loginKey.validity.valid;
+}
+
+function showLogin(message = '') {
+  clearTimeout(sessionTimer);
+  sessionRevision += 1;
+  historyRevision += 1;
+  state.authenticated = false;
+  state.loadingHistory = true;
+  state.messages = [];
+  state.requirements = null;
+  state.mode = 'business_analyst';
+  promptEl.value = '';
+  updateRequirements.checked = false;
+  setBusy(false);
+  renderHistory();
+  showError();
+  appShell.hidden = true;
+  loginScreen.hidden = false;
+  logoutButton.disabled = false;
+  showLoginError(message);
+  syncLogin();
+  loginKey.focus();
+}
+
+function startSession(session) {
+  clearTimeout(sessionTimer);
+  sessionRevision += 1;
+  state.authenticated = true;
+  emptyState.hidden = true;
+  loginScreen.hidden = true;
+  appShell.hidden = false;
+  sessionTimer = setTimeout(() => showLogin('Сессия завершилась. Войдите снова.'), session.expires_in * 1000);
+  loadHistory();
+}
+
+async function restoreSession() {
+  try {
+    startSession(await api('/api/auth/me'));
+  } catch (err) {
+    showLogin(err.status === 401 ? '' : `Не удалось проверить сессию: ${err.message}`);
+  }
+}
+
+async function login(event) {
+  event.preventDefault();
+  if (signingIn || !loginKey.validity.valid) return;
+  const key = loginKey.value;
+  loginKey.value = '';
+  signingIn = true;
+  syncLogin();
+  showLoginError();
+  try {
+    const session = await api('/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }),
+    });
+    startSession(session);
+  } catch (err) {
+    showLoginError(err.message);
+  } finally {
+    signingIn = false;
+    syncLogin();
+    if (!state.authenticated) loginKey.focus();
+  }
+}
+
+async function logout() {
+  const revision = sessionRevision;
+  logoutButton.disabled = true;
+  try {
+    await api('/api/auth/logout', { method: 'POST' });
+    if (revision === sessionRevision) showLogin();
+  } catch (err) {
+    if (revision === sessionRevision) {
+      logoutButton.disabled = false;
+      showError(`Не удалось выйти: ${err.message}`);
+    }
+  }
 }
 
 function formatTime(dateString) {
@@ -249,6 +349,7 @@ function setBusy(value) {
 }
 
 async function loadHistory() {
+  const session = sessionRevision;
   const revision = historyRevision;
   try {
     const loaded = await api('/api/chat');
@@ -261,17 +362,20 @@ async function loadHistory() {
       renderHistory();
     }
   } catch (err) {
-    showError(`Не удалось получить историю: ${err.message}`);
+    if (session === sessionRevision) showError(`Не удалось получить историю: ${err.message}`);
   } finally {
-    const showLatest = state.loadingHistory && state.messages.length > 0;
-    state.loadingHistory = false;
-    syncComposer();
-    if (showLatest) scrollToLatestMessage();
+    if (session === sessionRevision) {
+      const showLatest = state.loadingHistory && state.messages.length > 0;
+      state.loadingHistory = false;
+      syncComposer();
+      if (showLatest) scrollToLatestMessage();
+    }
   }
 }
 
 async function submitTurn(payload, clearComposer = false) {
-  if (state.busy || state.loadingHistory) return;
+  if (!state.authenticated || state.busy || state.loadingHistory) return;
+  const session = sessionRevision;
   showError();
   historyRevision += 1;
   setBusy(true);
@@ -281,6 +385,7 @@ async function submitTurn(payload, clearComposer = false) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    if (session !== sessionRevision) return;
     const initialAnalysis = !state.requirements && turn.requirements && payload.mode === 'business_analyst';
     state.messages.push(turn.user, turn.assistant);
     state.requirements = turn.requirements;
@@ -291,12 +396,14 @@ async function submitTurn(payload, clearComposer = false) {
     }
     renderHistory();
   } catch (err) {
-    if (err.status === 409) await loadHistory();
-    showError(`Не удалось отправить сообщение: ${err.message}`);
+    if (session === sessionRevision && err.status === 409) await loadHistory();
+    if (session === sessionRevision) showError(`Не удалось отправить сообщение: ${err.message}`);
   } finally {
-    setBusy(false);
-    promptEl.focus({ preventScroll: true });
-    scrollToLatestMessage();
+    if (session === sessionRevision) {
+      setBusy(false);
+      promptEl.focus({ preventScroll: true });
+      scrollToLatestMessage();
+    }
   }
 }
 
@@ -320,6 +427,9 @@ function toggleTheme() {
 }
 
 chatForm.addEventListener('submit', (event) => { event.preventDefault(); sendMessage(); });
+$('#login-form').addEventListener('submit', login);
+loginKey.addEventListener('input', () => { showLoginError(); syncLogin(); });
+logoutButton.addEventListener('click', logout);
 scrollButton.addEventListener('click', () => {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   scrollToLatestMessage(reduceMotion ? 'auto' : 'smooth');
@@ -349,9 +459,11 @@ clearButton.addEventListener('click', async () => {
   if (state.busy || !state.messages.length) return;
   if (!window.confirm('Очистить историю диалога и все версии требований?')) return;
   historyRevision += 1;
+  const session = sessionRevision;
   setBusy(true);
   try {
     await api('/api/messages', { method: 'DELETE' });
+    if (session !== sessionRevision) return;
     state.messages = [];
     state.requirements = null;
     state.mode = 'business_analyst';
@@ -359,9 +471,9 @@ clearButton.addEventListener('click', async () => {
     renderHistory();
     showError();
   } catch (err) {
-    showError(`Не удалось очистить историю: ${err.message}`);
+    if (session === sessionRevision) showError(`Не удалось очистить историю: ${err.message}`);
   } finally {
-    setBusy(false);
+    if (session === sessionRevision) setBusy(false);
   }
 });
 
@@ -369,4 +481,4 @@ let theme = 'light';
 try { theme = localStorage.getItem('requirements-theme') === 'dark' ? 'dark' : 'light'; } catch { /* ignore */ }
 applyTheme(theme);
 syncComposer();
-loadHistory();
+restoreSession();

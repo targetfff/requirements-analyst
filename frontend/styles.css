@@ -53,6 +53,25 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .48; }
 button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(28, 179, 137, .4); outline-offset: 2px; }
 .app-shell { display: grid; grid-template-columns: 246px minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; background: var(--bg); }
+.app-shell[hidden], .login-screen[hidden] { display: none; }
+.login-screen { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+.login-panel {
+  width: min(100%, 390px);
+  display: grid;
+  gap: 12px;
+  padding: clamp(20px, 5vw, 32px);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  box-shadow: var(--shadow-large);
+}
+.login-brand { margin: 0 0 8px; }
+.login-panel h1 { color: var(--heading); font-size: 24px; margin: 0; }
+.login-panel label { font-size: 12px; font-weight: 700; }
+.login-panel .error-message { margin: 0; }
+.login-key { min-width: 0; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--input); color: var(--text); font: inherit; }
+.login-key:focus-visible { outline: 3px solid rgba(28, 179, 137, .4); outline-offset: 2px; }
+.login-panel .send-button { min-height: 44px; justify-content: center; font-size: 13px; }
 .sidebar { border-right: 1px solid var(--line); background: var(--sidebar); display: flex; flex-direction: column; padding: 31px 15px 16px; }
 .brand { display: flex; align-items: center; gap: 13px; margin: 0 12px 57px; }
 .brand-title { color: var(--heading); font-size: 16px; line-height: 1.19; font-weight: 760; letter-spacing: -.65px; }
@@ -253,7 +272,7 @@ html[data-theme="dark"] .error-message { color: #ffcaca; background: #4b282d; bo
   .mobile-theme { display: flex; }
   .crumb, .crumb-divider { display: none; }
   .topbar-right { gap: 7px; }
-  .clear-button span { display:none; }
+  .clear-button span, .logout-button span { display:none; }
   .content-column { --chat-gutter: 16px; }
   .conversation-intro { padding: 0 0 20px; }
   .conversation-intro p { font-size: 12px; }

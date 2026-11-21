@@ -6,13 +6,27 @@
   <meta name="theme-color" content="#f5f9f9" />
   <meta name="description" content="Requirements Analyst — рабочее пространство для анализа требований" />
   <title>Requirements Analyst</title>
-  <link rel="stylesheet" href="/styles.css?v=chat-layout-4" />
+  <link rel="stylesheet" href="/styles.css?v=access-key" />
   <script src="/vendor/marked-18.2.1.umd.js" defer></script>
   <script src="/vendor/dompurify-3.4.18.min.js" defer></script>
-  <script src="/app.js?v=chat-layout-5" defer></script>
+  <script src="/app.js?v=access-key" defer></script>
 </head>
 <body>
-<div class="app-shell">
+<main id="login-screen" class="login-screen" hidden>
+  <form id="login-form" class="login-panel" method="post" action="/api/auth/login" aria-labelledby="login-title">
+    <div class="brand login-brand">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span class="brand-title">Requirements Analyst</span>
+    </div>
+    <h1 id="login-title">Вход в чат</h1>
+    <label for="access-key">Ключ доступа</label>
+    <input id="access-key" class="login-key" type="password" name="key" autocomplete="current-password"
+           minlength="8" maxlength="255" pattern="[A-Za-z0-9_\-]{8,255}" required>
+    <div id="login-error" class="error-message" role="alert" hidden></div>
+    <button id="login-button" type="submit" class="send-button" disabled>Войти</button>
+  </form>
+</main>
+<div class="app-shell" hidden>
   <aside class="sidebar" aria-label="Навигация">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
@@ -62,6 +76,10 @@
         <button id="clear-history" type="button" class="icon-button clear-button" title="Очистить историю" aria-label="Очистить историю" disabled>
           <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M10 4h4M7 7l1 13h8l1-13M10 11v5m4-5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span>Очистить</span>
+        </button>
+        <button id="logout-button" type="button" class="icon-button logout-button" title="Выйти" aria-label="Выйти">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 4H5v16h5m3-12 4 4-4 4m4-4H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Выйти</span>
         </button>
       </div>
     </header>
