@@ -11,7 +11,7 @@ ACCESS_KEY_PATTERN = compile(r"[A-Za-z0-9_-]{8,255}")
 
 class Settings(BaseSettings):
     app_name: str = "Requirements Analyst"
-    database_url: str = "sqlite:///./requirements.db"
+    database_url: str = "sqlite+aiosqlite:///./requirements.db"
     google_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.5-flash-lite"
     access_key: SecretStr | None = None

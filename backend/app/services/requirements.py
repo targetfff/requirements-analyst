@@ -1,9 +1,10 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from app.models.conversation import RequirementsVersion
 from app.schemas.chat import (
-    BusinessAnalysis, Requirement, RequirementsDocument, RequirementsEdit, RequirementsRead,
+    BusinessAnalysis,
+    Requirement,
+    RequirementsDocument,
+    RequirementsEdit,
+    RequirementsRead,
 )
 
 MAX_REQUIREMENTS_CHARS = 16_000
@@ -13,21 +14,23 @@ class InvalidRequirementsEdit(ValueError):
     pass
 
 
-def current_requirements(db: Session) -> RequirementsVersion | None:
-    return db.scalar(select(RequirementsVersion).order_by(RequirementsVersion.version.desc()).limit(1))
-
-
 def read_requirements(version: RequirementsVersion | None) -> RequirementsRead | None:
     if version is None:
         return None
     return RequirementsRead(version=version.version, **version.document)
 
 
-def _make_version(version: int, document: RequirementsDocument, next_number: int) -> RequirementsVersion:
+def _make_version(
+    version: int, document: RequirementsDocument, next_number: int,
+) -> RequirementsVersion:
     if len(document.model_dump_json()) > MAX_REQUIREMENTS_CHARS:
-        raise InvalidRequirementsEdit("Актуальные требования превысили лимит контекста. Сократите описание.")
+        raise InvalidRequirementsEdit(
+            "Актуальные требования превысили лимит контекста. Сократите описание."
+        )
     return RequirementsVersion(
-        version=version, document=document.model_dump(mode="json"), next_requirement_number=next_number,
+        version=version,
+        document=document.model_dump(mode="json"),
+        next_requirement_number=next_number,
     )
 
 
@@ -38,7 +41,9 @@ def initial_requirements(analysis: BusinessAnalysis) -> RequirementsVersion | No
     return _make_version(1, document, len(document.requirements) + 1)
 
 
-def revise_requirements(current: RequirementsVersion, edit: RequirementsEdit) -> RequirementsVersion | None:
+def revise_requirements(
+    current: RequirementsVersion, edit: RequirementsEdit,
+) -> RequirementsVersion | None:
     if edit.decision != "apply":
         return None
 
@@ -56,19 +61,23 @@ def revise_requirements(current: RequirementsVersion, edit: RequirementsEdit) ->
             next_number += 1
             continue
 
-        if change.id not in original_ids or change.id in edited_ids:
+        requirement_id = change.id
+        if requirement_id is None or requirement_id not in original_ids or requirement_id in edited_ids:
             raise InvalidRequirementsEdit("Неоднозначная ссылка на требование в ответе Gemini")
-        edited_ids.add(change.id)
+        edited_ids.add(requirement_id)
         if change.operation == "remove" and change.text is None:
-            del requirements[change.id]
+            del requirements[requirement_id]
         elif change.operation == "replace" and change.text is not None:
-            requirements[change.id] = Requirement(id=change.id, text=change.text)
+            requirements[requirement_id] = Requirement(id=requirement_id, text=change.text)
         else:
             raise InvalidRequirementsEdit("Некорректное изменение требования")
 
     document = RequirementsDocument(
         requirements=list(requirements.values()),
-        acceptance_criteria=original.acceptance_criteria if edit.acceptance_criteria is None else edit.acceptance_criteria,
+        acceptance_criteria=(
+            original.acceptance_criteria if edit.acceptance_criteria is None
+            else edit.acceptance_criteria
+        ),
         mvp=original.mvp if edit.mvp is None else edit.mvp,
     )
     if document == original:

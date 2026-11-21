@@ -2,9 +2,13 @@ __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+.idea/
 .env
+.env.*
 *.db
+*.sqlite
 *.sqlite3
+*.log
 .coverage
 htmlcov/
 tests/

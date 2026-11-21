@@ -13,7 +13,7 @@ services:
     build:
       context: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg://requirements:${POSTGRES_PASSWORD:-local_dev_only}@db:5432/requirements
+      DATABASE_URL: postgresql+asyncpg://requirements:${POSTGRES_PASSWORD:-local_dev_only}@db:5432/requirements
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:?Set GOOGLE_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
       ACCESS_KEY: ${ACCESS_KEY:?Set ACCESS_KEY}
