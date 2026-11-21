@@ -1,6 +1,6 @@
 'use strict';
 
-const state = { mode: 'analyst', busy: false, messages: [] };
+const state = { mode: 'business_analyst', busy: false, loadingHistory: true, messages: [], requirements: null };
 let historyRevision = 0; // Ignore a stale initial history fetch after a user action.
 const $ = (selector) => document.querySelector(selector);
 const messagesEl = $('#messages');
@@ -10,6 +10,8 @@ const submitButton = $('#send-button');
 const countEl = $('#char-count');
 const errorEl = $('#error-message');
 const clearButton = $('#clear-history');
+const systemButton = $('#system-analysis');
+const updateRequirements = $('#update-requirements');
 
 function element(tag, className, text) {
   const el = document.createElement(tag);
@@ -31,7 +33,9 @@ async function api(path, options = {}) {
       const body = await response.json();
       if (typeof body.detail === 'string') message = body.detail;
     } catch { /* fallback */ }
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
   return response.status === 204 ? null : response.json();
 }
@@ -45,7 +49,14 @@ function formatTime(dateString) {
   });
 }
 
-const modeTitles = { analyst: 'Анализ требований', critic: 'Проверка рисков', qa: 'Критерии приёмки' };
+const modeTitles = {
+  business_analyst: 'Business Analyst',
+  system_analyst: 'System Analyst',
+  clarification: 'Уточнение',
+  analyst: 'Анализ требований',
+  critic: 'Проверка рисков',
+  qa: 'Критерии приёмки',
+};
 
 function section(title, content) {
   const el = element('section', 'analysis-section');
@@ -59,14 +70,48 @@ function list(items) {
   return ul;
 }
 
-function renderAnalysis(result, mode) {
+function appendListSections(card, sections) {
+  for (const [title, items] of sections) {
+    if (items?.length) card.append(section(title, list(items)));
+  }
+}
+
+function renderAnalysis(message) {
+  const { analysis: result, mode, requirements_version: version } = message;
   const card = element('article', 'analysis-card');
   const top = element('div', 'analysis-top');
-  top.append(element('h3', '', modeTitles[mode] || modeTitles.analyst));
+  top.append(element('h3', '', modeTitles[mode] || 'Результат анализа'));
   if (result.is_demo === true) {
     top.append(element('span', 'analysis-badge', 'ДЕМО-ШАБЛОН'));
   }
+  if (mode === 'system_analyst') {
+    const stale = state.requirements && version !== state.requirements.version;
+    if (stale) {
+      top.append(element('span', 'analysis-badge analysis-badge--stale', 'Устаревший анализ'));
+    } else if (version !== null && version !== undefined) {
+      top.append(element('span', 'analysis-badge', `Требования · версия ${version}`));
+    }
+  }
   card.append(top);
+
+  if (result.feasibility) {
+    const { assessment, facts, assumptions } = result.feasibility;
+    card.append(section('Реализуемость', element('p', 'analysis-text', assessment)));
+    appendListSections(card, [['Факты', facts], ['Допущения', assumptions]]);
+  }
+
+  if (result.issues?.length) {
+    const wrapper = document.createElement('div');
+    result.issues.forEach(({ severity, text }) => {
+      const item = element('div', 'issue-row');
+      item.append(element('span', `severity severity--${severity}`), element('span', '', text));
+      wrapper.append(item);
+    });
+    card.append(section('Замечания и риски', wrapper));
+  } else if (result.feasibility) {
+    const summary = element('p', 'analysis-text', 'Замечаний и рисков не выявлено.');
+    card.append(section('Замечания и риски', summary));
+  }
 
   if (result.requirements?.length) {
     const table = element('table', 'requirements-table');
@@ -79,26 +124,49 @@ function renderAnalysis(result, mode) {
     table.append(body);
     card.append(section('Функциональные требования', table));
   }
-  if (result.issues?.length) {
-    const wrapper = document.createElement('div');
-    result.issues.forEach(({ severity, text }) => {
-      const item = element('div', 'issue-row');
-      item.append(element('span', `severity severity--${severity}`), element('span', '', text));
-      wrapper.append(item);
-    });
-    card.append(section('Замечания и риски', wrapper));
+
+  if (result.architecture) {
+    card.append(section('Архитектура', element('p', 'analysis-text', result.architecture)));
   }
-  if (result.acceptance_criteria?.length) {
-    card.append(section('Критерии приёмки', list(result.acceptance_criteria)));
-  }
-  if (result.questions?.length) {
-    card.append(section('Вопросы для уточнения', list(result.questions)));
-  }
+  appendListSections(card, [
+    ['Критерии приёмки', result.acceptance_criteria],
+    ['Минимальный MVP', result.mvp],
+    ['Технологии', result.technologies?.map(({ name, rationale }) => `${name} — ${rationale}`)],
+    ['Модели данных', result.data_models?.map(({ name, description }) => `${name} — ${description}`)],
+    ['API', result.api_endpoints?.map(({ method, path, purpose }) => `${method} ${path} — ${purpose}`)],
+    ['Взаимодействие компонентов', result.component_interactions],
+    ['Вопросы для уточнения', result.questions],
+  ]);
   return card;
+}
+
+function renderMessageText({ role, analysis, content }) {
+  const text = element('div', 'message-text', content);
+  if (role !== 'assistant' || analysis || !window.marked || !window.DOMPurify?.isSupported) return text;
+
+  try {
+    const html = window.marked.parse(content, { breaks: true });
+    const fragment = window.DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: [
+        'a', 'blockquote', 'br', 'code', 'del', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr',
+        'li', 'ol', 'p', 'pre', 'strong', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'ul',
+      ],
+      ALLOWED_ATTR: ['href', 'start', 'title'],
+      ALLOW_ARIA_ATTR: false,
+      ALLOW_DATA_ATTR: false,
+      RETURN_DOM_FRAGMENT: true,
+    });
+    text.replaceChildren(fragment);
+    text.classList.add('message-markdown');
+  } catch {
+    // Keep the original text when parsing or sanitization fails.
+  }
+  return text;
 }
 
 function renderMessage(message) {
   const item = element('article', `message message--${message.role}`);
+  if (message.mode === 'clarification') item.classList.add('message--clarification');
   const avatar = element('span', 'message-avatar', message.role === 'user' ? 'ВЫ' : 'RA');
   avatar.setAttribute('aria-hidden', 'true');
   const body = element('div', 'message-body');
@@ -107,18 +175,39 @@ function renderMessage(message) {
   const time = element('time', '', formatTime(message.created_at));
   time.dateTime = message.created_at;
   meta.append(time);
-  body.append(meta, element('div', 'message-text', message.content));
+  body.append(meta, renderMessageText(message));
   if (message.role === 'assistant' && message.analysis) {
-    body.append(renderAnalysis(message.analysis, message.mode));
+    body.append(renderAnalysis(message));
   }
   item.append(avatar, body);
   return item;
+}
+
+function renderRequirements() {
+  const current = state.requirements;
+  $('#requirements-toolbar').hidden = !current;
+  if (!current) return;
+
+  $('#requirements-version').textContent = `Актуальные требования · версия ${current.version}`;
+  const documentEl = $('#requirements-document');
+  documentEl.replaceChildren(list(current.requirements.map(({ id, text }) => `${id} — ${text}`)));
+  if (!current.requirements.length) documentEl.textContent = 'Список требований пуст.';
+  appendListSections(documentEl, [
+    ['Критерии приёмки', current.acceptance_criteria],
+    ['Минимальный MVP', current.mvp],
+  ]);
+
+  const analyses = state.messages.filter(message => message.mode === 'system_analyst' && message.analysis);
+  systemButton.hidden = !current.requirements.length ||
+    analyses.some(message => message.requirements_version === current.version);
+  systemButton.textContent = analyses.length ? 'Повторить системный анализ' : 'Перейти к системному анализу';
 }
 
 function renderHistory() {
   messagesEl.replaceChildren(...state.messages.map(renderMessage));
   emptyState.hidden = state.messages.length > 0;
   clearButton.disabled = state.busy || state.messages.length === 0;
+  renderRequirements();
   $('#conversation').scrollTop = $('#conversation').scrollHeight;
 }
 
@@ -126,14 +215,16 @@ function syncComposer() {
   const count = promptEl.value.length;
   const isValid = promptEl.value.trim().length > 0 && count <= 500;
   countEl.textContent = `${count} / 500`;
-  submitButton.disabled = !isValid || state.busy;
+  submitButton.disabled = !isValid || state.busy || state.loadingHistory;
   promptEl.disabled = state.busy;
+  systemButton.disabled = state.busy;
+  $('#requirements-edit').hidden = state.mode !== 'clarification' || !state.requirements;
+  updateRequirements.disabled = state.busy;
   document.querySelectorAll('.mode-btn').forEach((btn) => {
     const active = btn.dataset.mode === state.mode;
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-pressed', String(active));
     btn.disabled = state.busy;
-    btn.title = { analyst: 'Анализ', critic: 'Критика', qa: 'Критерии приёмки' }[btn.dataset.mode];
   });
 }
 
@@ -147,19 +238,25 @@ function setBusy(value) {
 async function loadHistory() {
   const revision = historyRevision;
   try {
-    const loaded = await api('/api/messages');
+    const loaded = await api('/api/chat');
     if (revision === historyRevision) {
-      state.messages = loaded;
+      state.messages = loaded.messages;
+      state.requirements = loaded.requirements;
+      if (state.loadingHistory && state.requirements && state.mode === 'business_analyst') {
+        state.mode = 'clarification';
+      }
       renderHistory();
     }
   } catch (err) {
     showError(`Не удалось получить историю: ${err.message}`);
+  } finally {
+    state.loadingHistory = false;
+    syncComposer();
   }
 }
 
-async function sendMessage() {
-  const text = promptEl.value.trim();
-  if (!text || text.length > 500 || state.busy) return;
+async function submitTurn(payload, clearComposer = false) {
+  if (state.busy || state.loadingHistory) return;
   showError();
   historyRevision += 1;
   setBusy(true);
@@ -167,17 +264,32 @@ async function sendMessage() {
     const turn = await api('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, mode: state.mode })
+      body: JSON.stringify(payload)
     });
+    const initialAnalysis = !state.requirements && turn.requirements && payload.mode === 'business_analyst';
     state.messages.push(turn.user, turn.assistant);
-    promptEl.value = '';
+    state.requirements = turn.requirements;
+    if (initialAnalysis) state.mode = 'clarification';
+    if (clearComposer) {
+      promptEl.value = '';
+      updateRequirements.checked = turn.requires_edit_clarification === true;
+    }
     renderHistory();
   } catch (err) {
+    if (err.status === 409) await loadHistory();
     showError(`Не удалось отправить сообщение: ${err.message}`);
   } finally {
     setBusy(false);
     promptEl.focus();
   }
+}
+
+function sendMessage() {
+  const text = promptEl.value.trim();
+  if (!text || text.length > 500) return;
+  const payload = { text, mode: state.mode };
+  if (state.mode === 'clarification' && updateRequirements.checked) payload.update_requirements = true;
+  return submitTurn(payload, true);
 }
 
 function applyTheme(theme) {
@@ -209,16 +321,25 @@ document.querySelectorAll('.example-card').forEach((btn) => btn.addEventListener
 }));
 $('#theme-toggle').addEventListener('click', toggleTheme);
 $('#mobile-theme').addEventListener('click', toggleTheme);
+systemButton.addEventListener('click', () => submitTurn({ mode: 'system_analyst' }));
 clearButton.addEventListener('click', async () => {
   if (state.busy || !state.messages.length) return;
-  if (!window.confirm('Очистить историю единственного диалога?')) return;
+  if (!window.confirm('Очистить историю диалога и все версии требований?')) return;
   historyRevision += 1;
+  setBusy(true);
   try {
     await api('/api/messages', { method: 'DELETE' });
     state.messages = [];
+    state.requirements = null;
+    state.mode = 'business_analyst';
+    updateRequirements.checked = false;
     renderHistory();
     showError();
-  } catch (err) { showError(`Не удалось очистить историю: ${err.message}`); }
+  } catch (err) {
+    showError(`Не удалось очистить историю: ${err.message}`);
+  } finally {
+    setBusy(false);
+  }
 });
 
 let theme = 'light';

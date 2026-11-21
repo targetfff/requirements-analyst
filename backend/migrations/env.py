@@ -5,6 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.db.base import Base
+from app.models.conversation import Conversation, RequirementsVersion  # noqa: F401
 from app.models.message import Message  # noqa: F401 - registers metadata
 
 config = context.config
