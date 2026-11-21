@@ -10,6 +10,8 @@ const submitButton = $('#send-button');
 const countEl = $('#char-count');
 const errorEl = $('#error-message');
 const clearButton = $('#clear-history');
+const chatForm = $('#chat-form');
+const scrollButton = $('#scroll-to-bottom');
 const systemButton = $('#system-analysis');
 const updateRequirements = $('#update-requirements');
 
@@ -208,7 +210,18 @@ function renderHistory() {
   emptyState.hidden = state.messages.length > 0;
   clearButton.disabled = state.busy || state.messages.length === 0;
   renderRequirements();
-  $('#conversation').scrollTop = $('#conversation').scrollHeight;
+  syncScrollButton();
+}
+
+function scrollToLatestMessage(behavior = 'auto') {
+  window.scrollTo({ top: document.scrollingElement.scrollHeight, behavior });
+}
+
+function syncScrollButton() {
+  const { scrollHeight, scrollTop, clientHeight } = document.scrollingElement;
+  const visible = state.messages.length > 0 && scrollHeight - scrollTop - clientHeight > 80;
+  scrollButton.classList.toggle('is-visible', visible);
+  scrollButton.inert = !visible;
 }
 
 function syncComposer() {
@@ -250,8 +263,10 @@ async function loadHistory() {
   } catch (err) {
     showError(`Не удалось получить историю: ${err.message}`);
   } finally {
+    const showLatest = state.loadingHistory && state.messages.length > 0;
     state.loadingHistory = false;
     syncComposer();
+    if (showLatest) scrollToLatestMessage();
   }
 }
 
@@ -280,7 +295,8 @@ async function submitTurn(payload, clearComposer = false) {
     showError(`Не удалось отправить сообщение: ${err.message}`);
   } finally {
     setBusy(false);
-    promptEl.focus();
+    promptEl.focus({ preventScroll: true });
+    scrollToLatestMessage();
   }
 }
 
@@ -303,7 +319,14 @@ function toggleTheme() {
   applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
 }
 
-$('#chat-form').addEventListener('submit', (event) => { event.preventDefault(); sendMessage(); });
+chatForm.addEventListener('submit', (event) => { event.preventDefault(); sendMessage(); });
+scrollButton.addEventListener('click', () => {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  scrollToLatestMessage(reduceMotion ? 'auto' : 'smooth');
+  chatForm.focus({ preventScroll: true });
+});
+window.addEventListener('scroll', syncScrollButton, { passive: true });
+window.addEventListener('resize', syncScrollButton);
 promptEl.addEventListener('input', syncComposer);
 promptEl.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {

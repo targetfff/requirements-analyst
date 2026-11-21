@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#f5f9f9" />
   <meta name="description" content="Requirements Analyst — рабочее пространство для анализа требований" />
   <title>Requirements Analyst</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css?v=chat-layout-4" />
   <script src="/vendor/marked-18.2.1.umd.js" defer></script>
   <script src="/vendor/dompurify-3.4.18.min.js" defer></script>
-  <script src="/app.js" defer></script>
+  <script src="/app.js?v=chat-layout-5" defer></script>
 </head>
 <body>
 <div class="app-shell">
@@ -55,7 +55,7 @@
         <span class="mobile-logo" aria-hidden="true">RA</span>
         <span class="crumb">РАБОЧЕЕ ПРОСТРАНСТВО</span>
         <span class="crumb-divider">/</span>
-        <strong>Анализ требований</strong>
+        <h1>Анализ требований</h1>
       </div>
       <div class="topbar-right">
         <button id="mobile-theme" type="button" class="icon-button mobile-theme" aria-label="Переключить тему">◐</button>
@@ -67,30 +67,31 @@
     </header>
 
     <div class="content-column">
-      <div class="conversation-head">
-        <div class="eyebrow"><span class="eyebrow-line"></span> ТЕХНИЧЕСКОЕ ЗАДАНИЕ → СТРУКТУРА</div>
-        <h1>От идеи к требованиям<span class="title-period">.</span></h1>
-        <p>Опишите идею, уточните требования и перейдите к проектированию системы.</p>
-      </div>
-
       <section id="conversation" class="conversation" aria-live="polite">
-        <div id="empty-state" class="empty-state">
-          <div class="welcome-label">НАЧНИТЕ С ОПИСАНИЯ</div>
-          <h2>Какую задачу разберём?</h2>
-          <p>Выберите пример ниже или напишите свой запрос.</p>
-          <div class="example-grid">
-            <button type="button" class="example-card" data-example="Нужна система, где сотрудники загружают документы, а руководители проверяют и согласовывают их.">
-              <span class="example-emoji" aria-hidden="true">▤</span>
-              <strong>Согласование документов</strong>
-              <span>Роли, статусы и процесс проверки</span>
-              <span class="card-arrow">↗</span>
-            </button>
-            <button type="button" class="example-card" data-example="Хочу сервис учёта заявок на ремонт: сотрудники создают обращения, а менеджеры назначают исполнителей.">
-              <span class="example-emoji" aria-hidden="true">◎</span>
-              <strong>Учёт заявок на ремонт</strong>
-              <span>Заявки, права доступа и статусы</span>
-              <span class="card-arrow">↗</span>
-            </button>
+        <div id="empty-state" hidden>
+          <div class="conversation-intro">
+            <div class="eyebrow"><span class="eyebrow-line"></span> ТЕХНИЧЕСКОЕ ЗАДАНИЕ → СТРУКТУРА</div>
+            <h2>От идеи к требованиям<span class="title-period">.</span></h2>
+            <p>Опишите идею, уточните требования и перейдите к проектированию системы.</p>
+          </div>
+          <div class="empty-state">
+            <div class="welcome-label">НАЧНИТЕ С ОПИСАНИЯ</div>
+            <h2>Какую задачу разберём?</h2>
+            <p>Выберите пример ниже или напишите свой запрос.</p>
+            <div class="example-grid">
+              <button type="button" class="example-card" data-example="Нужна система, где сотрудники загружают документы, а руководители проверяют и согласовывают их.">
+                <span class="example-emoji" aria-hidden="true">▤</span>
+                <strong>Согласование документов</strong>
+                <span>Роли, статусы и процесс проверки</span>
+                <span class="card-arrow">↗</span>
+              </button>
+              <button type="button" class="example-card" data-example="Хочу сервис учёта заявок на ремонт: сотрудники создают обращения, а менеджеры назначают исполнителей.">
+                <span class="example-emoji" aria-hidden="true">◎</span>
+                <strong>Учёт заявок на ремонт</strong>
+                <span>Заявки, права доступа и статусы</span>
+                <span class="card-arrow">↗</span>
+              </button>
+            </div>
           </div>
         </div>
         <div id="messages" class="messages"></div>
@@ -106,7 +107,7 @@
           </details>
           <button id="system-analysis" type="button" class="icon-button" hidden>Перейти к системному анализу</button>
         </div>
-        <form id="chat-form" class="composer">
+        <form id="chat-form" class="composer" tabindex="-1">
           <label for="prompt-text" class="sr-only">Сообщение</label>
           <textarea id="prompt-text" maxlength="500" rows="2" placeholder="Опишите пожелания заказчика или требования…" aria-describedby="composer-note"></textarea>
           <div class="composer-toolbar">
@@ -130,6 +131,9 @@
         <div id="composer-note" class="composer-note"><span class="note-circle">i</span> Текст запроса отправляется в Gemini.</div>
       </div>
     </div>
+    <button id="scroll-to-bottom" type="button" class="icon-button scroll-to-bottom" aria-label="Прокрутить в конец чата" inert>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-6-6 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </main>
 </div>
 </body>
