@@ -180,8 +180,8 @@ async def test_legacy_history(
 
 
 async def test_invalid_messages_are_rejected(client: AsyncClient, gemini: AsyncMock) -> None:
-    for text in ["   ", "", "x" * 501]:
-        assert (await client.post("/api/messages", json={"text": text})).status_code == 422
+    for invalid_text in ["   ", "", "x" * 501]:
+        assert (await client.post("/api/messages", json={"text": invalid_text})).status_code == 422
     for mode in ("analyst", "critic", "qa", "other"):
         response = await client.post("/api/messages", json={"text": "ok", "mode": mode})
         assert response.status_code == 422

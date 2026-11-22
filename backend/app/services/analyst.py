@@ -4,9 +4,19 @@ import logging
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from app.prompts.business_analyst import BUSINESS_ANALYST_PROMPT
-from app.prompts.clarification import CLARIFICATION_PROMPT, DIALOGUE_PROMPT, EDIT_REQUIREMENTS_PROMPT
+from app.prompts.clarification import (
+    CLARIFICATION_PROMPT,
+    DIALOGUE_PROMPT,
+    EDIT_REQUIREMENTS_PROMPT,
+)
 from app.prompts.system_analyst import SYSTEM_ANALYST_PROMPT
-from app.schemas.chat import BusinessAnalysis, Mode, RequirementsEdit, RequirementsRead, SystemAnalysis
+from app.schemas.chat import (
+    BusinessAnalysis,
+    Mode,
+    RequirementsEdit,
+    RequirementsRead,
+    SystemAnalysis,
+)
 from app.services.llm import LLMNotConfiguredError, get_llm
 
 logger = logging.getLogger(__name__)

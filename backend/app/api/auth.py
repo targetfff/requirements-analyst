@@ -7,7 +7,13 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel, SecretStr, field_validator
 
 from app.core.config import ACCESS_KEY_PATTERN, settings
-from app.core.session import SESSION_COOKIE, SESSION_TTL, create_session, require_same_origin, require_session
+from app.core.session import (
+    SESSION_COOKIE,
+    SESSION_TTL,
+    create_session,
+    require_same_origin,
+    require_session,
+)
 
 
 class AuthRoute(APIRoute):
