@@ -13,7 +13,7 @@ services:
     build:
       context: ./backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://requirements:${POSTGRES_PASSWORD:-local_dev_only}@db:5432/requirements
+      DATABASE_URL: postgresql+asyncpg://requirements:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/requirements
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:?Set GOOGLE_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
       ACCESS_KEY: ${ACCESS_KEY:?Set ACCESS_KEY}
@@ -39,7 +39,7 @@ services:
     environment:
       POSTGRES_DB: requirements
       POSTGRES_USER: requirements
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_only}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
