@@ -21,6 +21,7 @@ const errorEl = $('#error-message');
 const clearButton = $('#clear-history');
 const chatForm = $('#chat-form');
 const scrollButton = $('#scroll-to-bottom');
+const businessButton = $('#business-analysis');
 const systemButton = $('#system-analysis');
 const updateRequirements = $('#update-requirements');
 
@@ -288,6 +289,10 @@ function renderMessage(message) {
 function renderRequirements() {
   const current = state.requirements;
   $('#requirements-toolbar').hidden = !current;
+  businessButton.hidden = !current || current.version === 1 || state.messages.some(message =>
+    message.mode === 'business_analyst' && message.analysis &&
+    message.requirements_version === current.version
+  );
   if (!current) return;
 
   $('#requirements-version').textContent = `Актуальные требования · версия ${current.version}`;
@@ -330,6 +335,7 @@ function syncComposer() {
   countEl.textContent = `${count} / 500`;
   submitButton.disabled = !isValid || state.busy || state.loadingHistory;
   promptEl.disabled = state.busy;
+  businessButton.disabled = state.busy || state.loadingHistory;
   systemButton.disabled = state.busy;
   $('#requirements-edit').hidden = state.mode !== 'clarification' || !state.requirements;
   updateRequirements.disabled = state.busy;
@@ -454,6 +460,9 @@ document.querySelectorAll('.example-card').forEach((btn) => btn.addEventListener
 }));
 $('#theme-toggle').addEventListener('click', toggleTheme);
 $('#mobile-theme').addEventListener('click', toggleTheme);
+businessButton.addEventListener('click', () => submitTurn({
+  mode: 'business_analyst', text: 'Повтори бизнес-анализ с учётом актуальных требований.',
+}));
 systemButton.addEventListener('click', () => submitTurn({ mode: 'system_analyst' }));
 clearButton.addEventListener('click', async () => {
   if (state.busy || !state.messages.length) return;

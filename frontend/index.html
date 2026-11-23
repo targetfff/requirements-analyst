@@ -96,16 +96,23 @@
             <h2>Какую задачу разберём?</h2>
             <p>Выберите пример ниже или напишите свой запрос.</p>
             <div class="example-grid">
-              <button type="button" class="example-card" data-example="Нужна система, где сотрудники загружают документы, а руководители проверяют и согласовывают их.">
-                <span class="example-emoji" aria-hidden="true">▤</span>
-                <strong>Согласование документов</strong>
-                <span>Роли, статусы и процесс проверки</span>
+              <button type="button" class="example-card" data-example="Нужен сервис бронирования переговорных комнат. Сотрудники выбирают комнату и время, система запрещает пересекающиеся бронирования. Сформируй бизнес-требования и MVP.">
+                <svg class="example-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M16 3v4M8 3v4M3 10h18m-12 5 2 2 4-4" />
+                </svg>
+                <strong>Бронирование переговорных</strong>
+                <span>Выбор комнаты и времени без пересечений</span>
                 <span class="card-arrow">↗</span>
               </button>
-              <button type="button" class="example-card" data-example="Хочу сервис учёта заявок на ремонт: сотрудники создают обращения, а менеджеры назначают исполнителей.">
-                <span class="example-emoji" aria-hidden="true">◎</span>
-                <strong>Учёт заявок на ремонт</strong>
-                <span>Заявки, права доступа и статусы</span>
+              <button type="button" class="example-card" data-example="Нужен интернет-магазин электроники с каталогом, корзиной, оформлением заказов и онлайн-оплатой. Сформируй бизнес-требования и MVP.">
+                <svg class="example-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 4h2l2.5 11h11L21 7H5.7" />
+                  <circle cx="9" cy="19" r="1" />
+                  <circle cx="18" cy="19" r="1" />
+                </svg>
+                <strong>Интернет-магазин электроники</strong>
+                <span>Каталог, корзина, заказы и онлайн-оплата</span>
                 <span class="card-arrow">↗</span>
               </button>
             </div>
@@ -122,6 +129,7 @@
             <summary id="requirements-version"></summary>
             <div id="requirements-document"></div>
           </details>
+          <button id="business-analysis" type="button" class="icon-button" hidden>Повторить бизнес-анализ</button>
           <button id="system-analysis" type="button" class="icon-button" hidden>Перейти к системному анализу</button>
         </div>
         <form id="chat-form" class="composer" tabindex="-1">

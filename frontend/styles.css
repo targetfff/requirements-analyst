@@ -164,9 +164,9 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(28, 179, 
 .example-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; max-width: 670px; margin: 0 auto; text-align: left; }
 .example-card { position: relative; text-align: left; border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--panel); box-shadow: var(--shadow); min-height: 145px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; color: var(--text); transition: transform .2s ease,border-color .2s ease; }
 .example-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-.example-emoji { color: var(--accent); font-size: 25px; line-height: 1; margin-bottom: 10px; }
+.example-icon { width: 24px; height: 24px; color: var(--accent); margin-bottom: 10px; }
 .example-card strong { font-size: 13px; }
-.example-card > span:not(.example-emoji):not(.card-arrow) { font-size: 11px; color: var(--muted); }
+.example-card > span:not(.card-arrow) { font-size: 11px; color: var(--muted); }
 .card-arrow { position: absolute; right: 20px; top: 19px; color: var(--muted); font-size: 19px; }
 .messages { display: flex; flex-direction: column; gap: 22px; }
 .message { display: flex; align-items: flex-start; gap: 12px; animation: appear .25s ease; }
@@ -275,7 +275,7 @@ html[data-theme="dark"] .error-message { color: #ffcaca; background: #4b282d; bo
   .empty-state { padding-top: 50px; }
   .example-grid { grid-template-columns: 1fr; max-width: 420px; }
   .example-card { min-height: 115px; padding: 15px; }
-  .example-emoji { margin-bottom: 3px; }
+  .example-icon { margin-bottom: 3px; }
   .composer-toolbar { flex-wrap: wrap; }
   .mode-switch { flex-wrap: wrap; }
   .mode-btn { padding: 6px 8px; }
