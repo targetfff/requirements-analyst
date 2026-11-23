@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:18-alpine
+    image: postgres:18.7-alpine
     environment:
       POSTGRES_DB: requirements
       POSTGRES_USER: requirements

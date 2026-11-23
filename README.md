@@ -8,13 +8,13 @@
 
 ## Стек
 
-- Python 3.14
+- Python 3.15.2
 - FastAPI / Uvicorn
 - Pydantic v2 / pydantic-settings
 - Google Gemini API
 - LangChain Core / langchain-google-genai
 - SQLAlchemy 2.x Async / asyncpg
-- PostgreSQL 18
+- PostgreSQL 18.7
 - Alembic
 - HTML / CSS / JavaScript без frontend-фреймворков
 - Nginx
@@ -344,9 +344,11 @@ GET    /api/health     Проверка доступности API без авт
 - конкурентные запросы, очистку истории во время ответа модели и rollback;
 - миграции Alembic и совместимость старой истории.
 
-В GitHub Actions для текущей версии проекта успешно выполнено **53 тестовых сценария**. Реальный Gemini API в тестах не вызывается: внешние ответы подменяются моками, а БД создаётся во временной SQLite.
+В наборе **53 тестовых сценария**, которые запускаются в GitHub Actions. Реальный Gemini API в тестах не вызывается: внешние ответы подменяются моками, а БД создаётся во временной SQLite.
 
-Локальный запуск из каталога `backend/` после установки Python 3.14:
+При локальной установке зависимостей `pip` собирает `zstandard` из исходников, если для Python 3.15 нет готового пакета. Для такой сборки нужен C-компилятор, например GCC в Linux или Microsoft C++ Build Tools в Windows.
+
+Локальный запуск из каталога `backend/` после установки Python 3.15.2:
 
 ```bash
 cd backend
@@ -370,7 +372,7 @@ python -m ruff check .
 python -m ruff check . --fix
 ```
 
-Конфигурация находится в `backend/pyproject.toml`: Python 3.14, длина строки 100 символов, группы правил `E4`, `E7`, `E9`, `F`, `I`. Сгенерированные версии миграций исключены из проверки.
+Конфигурация находится в `backend/pyproject.toml`: Python 3.15, длина строки 100 символов, группы правил `E4`, `E7`, `E9`, `F`, `I`. Сгенерированные версии миграций исключены из проверки.
 
 ## Логи
 
