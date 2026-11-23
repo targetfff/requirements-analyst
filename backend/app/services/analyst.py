@@ -3,7 +3,7 @@ import logging
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from app.prompts.business_analyst import BUSINESS_ANALYST_PROMPT
+from app.prompts.business_analyst import BUSINESS_ANALYST_PROMPT, BUSINESS_REVIEW_PROMPT
 from app.prompts.clarification import (
     CLARIFICATION_PROMPT,
     DIALOGUE_PROMPT,
@@ -11,7 +11,9 @@ from app.prompts.clarification import (
 )
 from app.prompts.system_analyst import SYSTEM_ANALYST_PROMPT
 from app.schemas.chat import (
+    AnalysisBase,
     BusinessAnalysis,
+    InitialBusinessAnalysis,
     Mode,
     RequirementsEdit,
     RequirementsRead,
@@ -22,7 +24,7 @@ from app.services.llm import LLMNotConfiguredError, get_llm
 logger = logging.getLogger(__name__)
 
 ANALYSIS_MODES = {
-    Mode.business_analyst: (BUSINESS_ANALYST_PROMPT, BusinessAnalysis),
+    Mode.business_analyst: (BUSINESS_ANALYST_PROMPT, InitialBusinessAnalysis),
     Mode.system_analyst: (SYSTEM_ANALYST_PROMPT, SystemAnalysis),
 }
 
@@ -39,6 +41,8 @@ async def respond(
         system_prompt, schema = EDIT_REQUIREMENTS_PROMPT, RequirementsEdit
     elif mode == Mode.clarification:
         system_prompt, schema = CLARIFICATION_PROMPT, None
+    elif mode == Mode.business_analyst and requirements is not None:
+        system_prompt, schema = BUSINESS_REVIEW_PROMPT, AnalysisBase
     else:
         system_prompt, schema = ANALYSIS_MODES[mode]
 
@@ -51,7 +55,18 @@ async def respond(
         async with asyncio.timeout(50):
             if schema is not None:
                 result = await llm.with_structured_output(schema, method="json_schema").ainvoke(messages)
-                return schema.model_validate(result)
+                analysis = schema.model_validate(result)
+                if schema is AnalysisBase:
+                    assert requirements is not None
+                    return BusinessAnalysis(
+                        feasibility=analysis.feasibility,
+                        issues=analysis.issues,
+                        questions=analysis.questions,
+                        requirements=requirements.requirements,
+                        acceptance_criteria=requirements.acceptance_criteria,
+                        mvp=requirements.mvp,
+                    )
+                return analysis
             result = await llm.ainvoke(messages)
             reply = result.text.strip()
             if not reply:

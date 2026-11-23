@@ -17,7 +17,7 @@ from app.models.conversation import RequirementsVersion
 from app.prompts.business_analyst import BUSINESS_ANALYST_PROMPT
 from app.prompts.clarification import CLARIFICATION_PROMPT, DIALOGUE_PROMPT
 from app.prompts.system_analyst import SYSTEM_ANALYST_PROMPT
-from app.schemas.chat import BusinessAnalysis, SystemAnalysis
+from app.schemas.chat import InitialBusinessAnalysis, SystemAnalysis
 from app.services.chat import SYSTEM_ANALYSIS_REQUEST
 from app.services.llm import get_llm
 
@@ -103,7 +103,7 @@ async def test_default_mode_and_reload_history(client: AsyncClient) -> None:
 
 
 @pytest.mark.parametrize("mode,prompt,schema,analysis", [
-    ("business_analyst", BUSINESS_ANALYST_PROMPT, BusinessAnalysis, BUSINESS_RESULT),
+    ("business_analyst", BUSINESS_ANALYST_PROMPT, InitialBusinessAnalysis, BUSINESS_RESULT),
     ("system_analyst", SYSTEM_ANALYST_PROMPT, SystemAnalysis, SYSTEM_RESULT),
 ], ids=["business", "system"])
 async def test_modes(
@@ -111,7 +111,7 @@ async def test_modes(
     gemini: AsyncMock,
     mode: str,
     prompt: str,
-    schema: type[BusinessAnalysis] | type[SystemAnalysis],
+    schema: type[InitialBusinessAnalysis] | type[SystemAnalysis],
     analysis: dict[str, Any],
 ) -> None:
     if mode == "system_analyst":
@@ -187,7 +187,12 @@ async def test_invalid_gemini_response_does_not_write_messages(
     gemini: AsyncMock,
 ) -> None:
     before = (await client.get("/api/chat")).json()
-    gemini.return_value = gemini_response({**BUSINESS_RESULT, "questions": ["Один вопрос?"]})
+    gemini.return_value = gemini_response({
+        **BUSINESS_RESULT,
+        "requirements": [
+            *BUSINESS_RESULT["requirements"], {"id": "FR-03", "text": "Просмотр документов"},
+        ],
+    })
     response = await client.post(
         "/api/messages", json={"text": "Проверь требования", "mode": "business_analyst"},
     )
@@ -258,6 +263,74 @@ async def test_edit_requirements_and_repeat_system_analysis(
     history = {message["id"]: message for message in (await client.get("/api/messages")).json()}
     assert history[first["id"]]["is_stale"] is True
     assert history[first["id"]]["analysis"] == first["analysis"]
+
+
+@pytest.mark.parametrize("suggest_changes", [False, True], ids=["id-gap", "different-document"])
+async def test_repeat_business_analysis_uses_saved_document(
+    client: AsyncClient,
+    gemini: AsyncMock,
+    suggest_changes: bool,
+) -> None:
+    initial = [
+        *BUSINESS_RESULT["requirements"],
+        {"id": "FR-02", "text": "Удаление документов"},
+        {"id": "FR-03", "text": "Просмотр документов"},
+    ]
+    gemini.return_value = gemini_response({**BUSINESS_RESULT, "requirements": initial})
+    created = await client.post("/api/messages", json={"text": "Нужна работа с документами"})
+    assert created.status_code == 201
+
+    document = {
+        "requirements": [initial[0], initial[2]],
+        "acceptance_criteria": ["FR-03: документ доступен для просмотра"],
+        "mvp": ["Загрузка и просмотр документов"],
+    }
+    gemini.return_value = gemini_response({
+        **EDIT_RESULT,
+        "reply": "Удалил требование FR-02.",
+        "changes": [{"operation": "remove", "id": "FR-02", "text": None}],
+        "acceptance_criteria": document["acceptance_criteria"],
+        "mvp": document["mvp"],
+    })
+    edited = await client.post("/api/messages", json={
+        "mode": "clarification", "text": "Убери удаление документов", "update_requirements": True,
+    })
+    assert edited.status_code == 201
+    saved = {"version": 2, **document}
+    assert edited.json()["requirements"] == saved
+
+    suggested = document
+    if suggest_changes:
+        suggested = {
+            "requirements": [{"id": "FR-01", "text": "Архивация документов"}],
+            "acceptance_criteria": ["FR-01: документ добавлен в архив"],
+            "mvp": ["Архив документов"],
+        }
+    review = {
+        "feasibility": {
+            "assessment": "Загрузка и просмотр реализуемы",
+            "facts": ["Удаление документов исключено"],
+            "assumptions": [],
+        },
+        "issues": [{"severity": "medium", "text": "Не согласованы права просмотра"}],
+        "questions": ["Кто может просматривать документы?", "Как долго хранить документы?"],
+    }
+    gemini.return_value = gemini_response(review | suggested)
+    repeated = await client.post("/api/messages", json={
+        "mode": "business_analyst", "text": "Повтори бизнес-анализ по актуальным требованиям",
+    })
+    assert repeated.status_code == 201
+    turn = repeated.json()
+    assert turn["requirements"] == saved
+    assert turn["assistant"]["requirements_version"] == 2
+    assert turn["assistant"]["analysis"] == review | document
+    schema = gemini.await_args.kwargs["config"].response_json_schema
+    assert schema["properties"].keys() == review.keys()
+
+    history = await client.get("/api/chat")
+    assert history.status_code == 200
+    assert history.json()["requirements"] == saved
+    assert history.json()["messages"][-1] == turn["assistant"]
 
 
 async def test_ambiguous_edit_requests_clarification_without_changing_requirements(

@@ -78,6 +78,10 @@ class RequirementsRead(RequirementsDocument):
 
 
 class BusinessAnalysis(AnalysisBase, RequirementsDocument):
+    pass
+
+
+class InitialBusinessAnalysis(BusinessAnalysis):
     @field_validator("requirements")
     @classmethod
     def sequential_requirement_ids(cls, requirements: list[Requirement]) -> list[Requirement]:
