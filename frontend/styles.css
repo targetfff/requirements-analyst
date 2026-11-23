@@ -114,10 +114,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(28, 179, 
   background: var(--panel);
 }
 .topbar-left, .topbar-right { display: flex; align-items: center; gap: 14px; }
-.crumb, .topbar-left h1 { font-size: 10px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
-.topbar-left h1 { margin: 0; }
-.crumb { color: var(--subtle); }
-.crumb-divider { color: var(--subtle); }
+.topbar-left h1 { margin: 0; font-size: 10px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
 .icon-button { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 10px; padding: 8px 11px; display: flex; align-items: center; gap: 7px; font-size: 12px; }
 .icon-button:hover:not(:disabled) { color: var(--heading); background: var(--hover); }
 .icon-button svg { width: 16px; height: 16px; }
@@ -270,7 +267,6 @@ html[data-theme="dark"] .error-message { color: #ffcaca; background: #4b282d; bo
   .topbar-left { gap: 9px; }
   .mobile-logo { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: linear-gradient(135deg,#1d6790,#51de9a); color: #fff; font-size: 10px; font-weight: 800; }
   .mobile-theme { display: flex; }
-  .crumb, .crumb-divider { display: none; }
   .topbar-right { gap: 7px; }
   .clear-button span, .logout-button span { display:none; }
   .content-column { --chat-gutter: 16px; }
