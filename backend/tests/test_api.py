@@ -18,6 +18,7 @@ from app.prompts.business_analyst import BUSINESS_ANALYST_PROMPT
 from app.prompts.clarification import CLARIFICATION_PROMPT, DIALOGUE_PROMPT
 from app.prompts.system_analyst import SYSTEM_ANALYST_PROMPT
 from app.schemas.chat import InitialBusinessAnalysis, SystemAnalysis
+from app.services.analyst import StructuredReply
 from app.services.chat import SYSTEM_ANALYSIS_REQUEST
 from app.services.llm import get_llm
 
@@ -61,7 +62,7 @@ EDIT_RESULT = {
 
 
 def gemini_response(analysis: dict[str, Any] | str) -> GenerateContentResponse:
-    text = analysis if isinstance(analysis, str) else json.dumps(analysis)
+    text = analysis if isinstance(analysis, str) else json.dumps({"result": analysis})
     content = {"role": "model", "parts": [{"text": text}]}
     return GenerateContentResponse.model_validate({
         "candidates": [{"content": content}],
@@ -141,7 +142,7 @@ async def test_modes(
     else:
         assert message.parts[0].text == text
     assert config.response_mime_type == "application/json"
-    assert config.response_json_schema == schema.model_json_schema()
+    assert config.response_json_schema == StructuredReply[schema].model_json_schema()
 
 
 async def test_invalid_messages_are_rejected(client: AsyncClient, gemini: AsyncMock) -> None:
@@ -324,7 +325,7 @@ async def test_repeat_business_analysis_uses_saved_document(
     assert turn["assistant"]["requirements_version"] == 2
     assert turn["assistant"]["analysis"] == review | document
     schema = gemini.await_args.kwargs["config"].response_json_schema
-    assert schema["properties"].keys() == review.keys()
+    assert schema["$defs"]["AnalysisBase"]["properties"].keys() == review.keys()
 
     history = await client.get("/api/chat")
     assert history.status_code == 200

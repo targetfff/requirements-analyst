@@ -2,12 +2,14 @@ import asyncio
 import logging
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from pydantic import BaseModel
 
 from app.prompts.business_analyst import BUSINESS_ANALYST_PROMPT, BUSINESS_REVIEW_PROMPT
 from app.prompts.clarification import (
     CLARIFICATION_PROMPT,
     DIALOGUE_PROMPT,
     EDIT_REQUIREMENTS_PROMPT,
+    OFF_TOPIC_REPLY,
 )
 from app.prompts.system_analyst import SYSTEM_ANALYST_PROMPT
 from app.schemas.chat import (
@@ -33,6 +35,10 @@ class AnalysisError(Exception):
     pass
 
 
+class StructuredReply[ResultT: BaseModel](BaseModel):
+    result: ResultT | None
+
+
 async def respond(
     text: str, mode: Mode, history: list[HumanMessage | AIMessage],
     requirements: RequirementsRead | None, *, update_requirements: bool = False,
@@ -54,8 +60,13 @@ async def respond(
         # Keep the full call, including retries, within the proxy timeout.
         async with asyncio.timeout(50):
             if schema is not None:
-                result = await llm.with_structured_output(schema, method="json_schema").ainvoke(messages)
-                analysis = schema.model_validate(result)
+                reply_schema = StructuredReply[schema]
+                result = await llm.with_structured_output(
+                    reply_schema, method="json_schema",
+                ).ainvoke(messages)
+                analysis = reply_schema.model_validate(result).result
+                if analysis is None:
+                    return OFF_TOPIC_REPLY
                 if schema is AnalysisBase:
                     assert requirements is not None
                     return BusinessAnalysis(
