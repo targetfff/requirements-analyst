@@ -147,9 +147,8 @@ async def test_modes(
 async def test_invalid_messages_are_rejected(client: AsyncClient, gemini: AsyncMock) -> None:
     for invalid_text in ["   ", "", "x" * 501]:
         assert (await client.post("/api/messages", json={"text": invalid_text})).status_code == 422
-    for mode in ("analyst", "critic", "qa", "other"):
-        response = await client.post("/api/messages", json={"text": "ok", "mode": mode})
-        assert response.status_code == 422
+    unknown = await client.post("/api/messages", json={"text": "ok", "mode": "other"})
+    assert unknown.status_code == 422
     assert (await client.post("/api/messages", json={"mode": "system_analyst"})).status_code == 409
     invalid_edit = {"text": "copy", "update_requirements": True}
     assert (await client.post("/api/messages", json=invalid_edit)).status_code == 422

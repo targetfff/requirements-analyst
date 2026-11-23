@@ -129,14 +129,6 @@ class RequirementsEdit(BaseModel):
     mvp: list[NonemptyText] | None
 
 
-class LegacyAnalysis(BaseModel):
-    requirements: list[Requirement] = Field(default_factory=list)
-    issues: list[Issue] = Field(default_factory=list)
-    acceptance_criteria: list[str] = Field(default_factory=list)
-    questions: list[str] = Field(default_factory=list)
-    is_demo: bool = True
-
-
 class MessageReadBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -169,23 +161,15 @@ class ClarificationMessageRead(MessageReadBase):
     analysis: None = None
 
 
-class LegacyMessageRead(MessageReadBase):
-    mode: Literal["analyst", "critic", "qa"]
-    analysis: LegacyAnalysis | None = None
-
-
-NewMessageRead = Annotated[
-    BusinessMessageRead | SystemMessageRead | ClarificationMessageRead, Field(discriminator="mode")
-]
 MessageRead = Annotated[
-    BusinessMessageRead | SystemMessageRead | ClarificationMessageRead | LegacyMessageRead,
+    BusinessMessageRead | SystemMessageRead | ClarificationMessageRead,
     Field(discriminator="mode"),
 ]
 
 
 class ChatTurn(BaseModel):
-    user: NewMessageRead
-    assistant: NewMessageRead
+    user: MessageRead
+    assistant: MessageRead
     requirements: RequirementsRead | None
     requires_edit_clarification: bool = False
 

@@ -156,9 +156,6 @@ const modeTitles = {
   business_analyst: 'Business Analyst',
   system_analyst: 'System Analyst',
   clarification: 'Уточнение',
-  analyst: 'Анализ требований',
-  critic: 'Проверка рисков',
-  qa: 'Критерии приёмки',
 };
 
 function section(title, content) {
@@ -183,10 +180,7 @@ function renderAnalysis(message) {
   const { analysis: result, mode, requirements_version: version } = message;
   const card = element('article', 'analysis-card');
   const top = element('div', 'analysis-top');
-  top.append(element('h3', '', modeTitles[mode] || 'Результат анализа'));
-  if (result.is_demo === true) {
-    top.append(element('span', 'analysis-badge', 'ДЕМО-ШАБЛОН'));
-  }
+  top.append(element('h3', '', modeTitles[mode]));
   if (mode === 'system_analyst') {
     const stale = state.requirements && version !== state.requirements.version;
     if (stale) {
@@ -197,13 +191,11 @@ function renderAnalysis(message) {
   }
   card.append(top);
 
-  if (result.feasibility) {
-    const { assessment, facts, assumptions } = result.feasibility;
-    card.append(section('Реализуемость', element('p', 'analysis-text', assessment)));
-    appendListSections(card, [['Факты', facts], ['Допущения', assumptions]]);
-  }
+  const { assessment, facts, assumptions } = result.feasibility;
+  card.append(section('Реализуемость', element('p', 'analysis-text', assessment)));
+  appendListSections(card, [['Факты', facts], ['Допущения', assumptions]]);
 
-  if (result.issues?.length) {
+  if (result.issues.length) {
     const wrapper = document.createElement('div');
     result.issues.forEach(({ severity, text }) => {
       const item = element('div', 'issue-row');
@@ -211,7 +203,7 @@ function renderAnalysis(message) {
       wrapper.append(item);
     });
     card.append(section('Замечания и риски', wrapper));
-  } else if (result.feasibility) {
+  } else {
     const summary = element('p', 'analysis-text', 'Замечаний и рисков не выявлено.');
     card.append(section('Замечания и риски', summary));
   }

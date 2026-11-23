@@ -16,7 +16,7 @@
   --chip: #f0f5f5;
   --selected: #e5f6f0;
   --bubble: #eef5f8;
-  --demo: #e2f8ec;
+  --analysis-badge-bg: #e2f8ec;
   --input: #fff;
   --hover: #f1f7f6;
   --shadow: 0 10px 35px rgba(25, 58, 66, .045);
@@ -39,7 +39,7 @@ html[data-theme="dark"] {
   --chip: #203741;
   --selected: #1a443d;
   --bubble: #1d3541;
-  --demo: #1a473d;
+  --analysis-badge-bg: #1a473d;
   --input: #132f3a;
   --hover: #17323d;
   --shadow: 0 12px 28px rgba(0, 0, 0, .1);
@@ -202,7 +202,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(28, 179, 
 .analysis-card { background: var(--panel); border: 1px solid var(--line); border-radius: 15px; padding: 18px 18px 15px; margin-top: 14px; box-shadow: var(--shadow); overflow-wrap: anywhere; }
 .analysis-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 11px; border-bottom: 1px solid var(--line); }
 .analysis-top h3 { color: var(--heading); font-weight: 740; font-size: 13px; margin: 0; }
-.analysis-badge { font-size: 10px; background: var(--demo); color: var(--accent); font-weight: 750; border-radius: 7px; padding: 5px 9px; }
+.analysis-badge { font-size: 10px; background: var(--analysis-badge-bg); color: var(--accent); font-weight: 750; border-radius: 7px; padding: 5px 9px; }
 .analysis-badge--stale { background: var(--chip); color: var(--muted); }
 .analysis-section { margin-top: 17px; }
 .analysis-section h4 { display: flex; align-items: center; gap: 8px; color: var(--heading); font-size: 12px; font-weight: 720; margin: 0 0 9px; }
