@@ -229,6 +229,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(28, 179, 
 .requirements-toolbar summary { padding: 7px 0; cursor: pointer; }
 #requirements-document { max-height: min(180px, 22vh); overflow: auto; overflow-wrap: anywhere; padding-bottom: 8px; }
 .requirements-edit { display: flex; align-items: center; gap: 6px; margin-top: 7px; color: var(--muted); font-size: 12px; }
+#update-requirements { accent-color: var(--accent); }
 .requirements-toolbar[hidden], .requirements-toolbar [hidden], .requirements-edit[hidden] { display: none; }
 .composer { background: var(--input); border: 1px solid var(--line-strong); border-radius: 15px; box-shadow: var(--shadow-large); padding: 11px 12px 10px; }
 .composer:focus-within { border-color: var(--accent); }
